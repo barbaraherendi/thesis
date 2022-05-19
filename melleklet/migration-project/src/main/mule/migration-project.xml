@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:batch="http://www.mulesoft.org/schema/mule/batch"
+	xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="812780dc-5506-4a3e-a531-e7c3dae9d0e6" >
+		<http:listener-connection host="0.0.0.0" port="8084" />
+	</http:listener-config>
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="2d305ec2-6696-43d6-bbea-eaf5b58efe13" >
+		<db:my-sql-connection host="congo.c3w6upfzlwwe.us-west-1.rds.amazonaws.com" port="3306" user="mulesoft" password="mulesoft" database="congo" />
+	</db:config>
+	<salesforce:sfdc-config name="Salesforce_Config" doc:name="Salesforce Config" doc:id="bf1b8752-61cf-4888-8eb3-7d4d97513dd0" >
+		<salesforce:basic-connection username="bherendi96@gmail.com" password="!mfvRWi7WYtjznm" securityToken="RMUjzQW4KdXCjcqiAWbgXktLw" />
+	</salesforce:sfdc-config>
+	<flow name="migration-projectFlow" doc:id="22bce437-584a-4e3b-af5c-be878c615e3b" >
+		<http:listener doc:name="Listener" doc:id="b66051e1-755d-428d-b37c-ec8c7ee6ab1e" config-ref="HTTP_Listener_config" path="/salesforce"/>
+		<db:select doc:name="Select" doc:id="3aa43504-8ce3-4844-b2ae-a42f2f405e37" config-ref="Database_Config">
+			<db:sql ><![CDATA[SELECT * from contacts;]]></db:sql>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="bda4b1c1-dcad-4985-95fe-26e9baf5abff" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload map(item, index) ->{
+	FirstName: item.FirstName,
+	LastName: item.LastName,
+	Email: item.Email,
+	Company: item.Company
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<salesforce:create type="Lead" doc:name="Create" doc:id="ec4e7cf7-1c63-48bb-b4d0-185890c92f62" config-ref="Salesforce_Config">
+						</salesforce:create>
+	</flow>
+</mule>

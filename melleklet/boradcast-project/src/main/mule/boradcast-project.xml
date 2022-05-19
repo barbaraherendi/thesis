@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+	<salesforce:sfdc-config name="Salesforce_Config" doc:name="Salesforce Config" doc:id="98b9b909-dab1-49a2-9c13-a7e8bd0dd752" >
+		<salesforce:basic-connection username="bherendi96@gmail.com" password="!mfvRWi7WYtjznm" securityToken="RMUjzQW4KdXCjcqiAWbgXktLw" />
+	</salesforce:sfdc-config>
+	<salesforce:sfdc-config name="Salesforce_Config1" doc:name="Salesforce Config" doc:id="f29e5b52-53e0-4e14-970e-810193a78fbb" >
+		<salesforce:basic-connection username="bherendi96@gmail.com" password="!mfvRWi7WYtjznm" securityToken="RMUjzQW4KdXCjcqiAWbgXktLw" />
+	</salesforce:sfdc-config>
+	<salesforce:sfdc-config name="Salesforce_Config2" doc:name="Salesforce Config" doc:id="44462c0a-1819-489d-8459-e00e5b621322" >
+		<salesforce:basic-connection username="bherendi96@gmail.com" password="!mfvRWi7WYtjznm" securityToken="RMUjzQW4KdXCjcqiAWbgXktLw" />
+	</salesforce:sfdc-config>
+	<flow name="new_lead_flow" doc:id="27a96e16-60fe-44e7-9588-78e07895788a" >
+		<salesforce:new-object-listener objectType="Lead" doc:name="On New Object" doc:id="280e4773-7687-4ac1-a213-6173a695b08c" config-ref="Salesforce_Config1">
+			<scheduling-strategy >
+				<fixed-frequency />
+			</scheduling-strategy>
+		</salesforce:new-object-listener>
+		<ee:transform doc:name="Transform Message" doc:id="d1bdf127-7d49-487d-ba07-2490d08b1c18" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+[payload] map {
+	"FirstName": payload.FirstName,
+	"LastName": payload.LastName,
+	"Company": payload.Company,
+	"Email": payload.Email,
+	"Country": payload.Address.country,
+	"PostalCode": payload.Address.postalCode,
+	"City": payload.Address.city,
+	"Address":payload.Address.street,
+	"Phone":payload.Phone
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<scatter-gather doc:name="Scatter-Gather" doc:id="c47a41c5-23dc-404d-8487-d2af4c238fdb">
+			<route>
+				<file:write doc:name="Write" doc:id="e89756e9-cb58-4e2c-8483-40f941978fad" path="C:\Leads\Leads.csv">
+					<file:content><![CDATA[#[%dw 2.0
+output application/csv header = false, headerLineNumber = 0
+---
+payload map ( payload01 , indexOfPayload01 ) -> {
+	FirstName: payload01.FirstName as String,
+	LastName: payload01.LastName as String,
+	Company: payload01.Company as String,
+	Email: payload01.Email as String,
+	Country: payload01.Country as String,
+	Postalcode: payload01.PostalCode as String,
+	City: payload01.City as String,
+	Address: payload01.Address as String,
+	Phone: payload01.Phone as String
+	}]]]></file:content>
+				</file:write>
+			</route>
+			<route >
+				<file:write doc:name="Write" doc:id="a0c12eb6-2da6-454a-b428-c3f4d859ca44" path="C:\Leads\Leads2.csv">
+					<file:content><![CDATA[#[%dw 2.0
+output application/csv header = false, headerLineNumber = 0
+---
+payload map ( payload01 , indexOfPayload01 ) -> {
+	FirstName: payload01.FirstName as String,
+	LastName: payload01.LastName as String,
+	Company: payload01.Company as String,
+	Email: payload01.Email as String,
+	Country: payload01.Country as String,
+	Postalcode: payload01.PostalCode as String,
+	City: payload01.City as String,
+	Address: payload01.Address as String,
+	Phone: payload01.Phone as String
+}]]]></file:content>
+				</file:write>
+			</route>
+		</scatter-gather>
+	</flow>
+	<flow name="deleted_lead_flow" doc:id="dcf9ca28-8e2e-4615-bc75-e192e2ef98dc" >
+		<salesforce:deleted-object-listener doc:name="On Deleted Object" doc:id="dba307be-9c90-4070-ae93-ce4e94fd3479" config-ref="Salesforce_Config" objectType="Lead">
+			<scheduling-strategy >
+				<fixed-frequency frequency="3000"/>
+			</scheduling-strategy>
+		</salesforce:deleted-object-listener>
+		<ee:transform doc:name="Transform Message" doc:id="d376846d-6f92-42b7-a225-98f1241c48c6">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<file:write doc:name="Write" doc:id="6e12a69e-1b5d-4a47-ad2d-569112cc8d1b" path="C:\Leads\Deleted_leads.csv" mode="APPEND"/>
+	</flow>
+</mule>
